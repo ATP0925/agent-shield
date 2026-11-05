@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "security": {
+    "block_on_secrets": true,
+    "block_on_pii": true,
+    "confirmation_steps": 2,
+    "exempt_noreply_emails": true
+  },
+  "protected_patterns": {
+    "files": [
+      ".env*",
+      "*.pem",
+      "*.key",
+      "id_rsa*",
+      "id_ed25519*",
+      "secrets.*",
+      "credentials.*",
+      "*.pfx",
+      "*.keystore"
+    ],
+    "agent_artifacts": [
+      ".claude/history*",
+      ".claude/transcripts*",
+      ".cursor/logs*",
+      ".gemini/antigravity/brain/*/transcript*.jsonl",
+      ".cline/tasks*",
+      ".roo/history*"
+    ],
+    "destructive_commands": [
+      "rm\\s+-rf\\s+[/~]",
+      "rmdir\\s+/s\\s+/q\\s+[C-Zc-z]:[\\\\/]",
+      "git\\s+push\\s+.*--force",
+      "git\\s+reset\\s+--hard",
+      "DROP\\s+DATABASE",
+      "DROP\\s+TABLE",
+      "DELETE\\s+FROM\\s+\\w+\\s*;\\s*$"
+    ]
+  },
+  "custom_pii_patterns": [],
+  "user_settings": {
+    "user_alias": "Developer",
+    "alert_sound": false
+  }
+}
