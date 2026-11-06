@@ -18,6 +18,13 @@ DEFAULT_DESTRUCTIVE_RULES = [
         "message": "Dangerous recursive deletion of root/home filesystem prohibited."
     },
     {
+        "name": "recursive_deletion_variant",
+        "pattern": r"(?i)(?:rm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|rm\s+-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)\s+(?:[/~]|[A-Za-z]:[\\/])",
+        "risk": "CRITICAL",
+        "action": "BLOCK",
+        "message": "Dangerous recursive deletion variant (rm -fr, rm -rfi, etc.) blocked."
+    },
+    {
         "name": "powershell_recursive_root_deletion",
         "pattern": r"(?i)(?:remove-item|del|rmdir|rd)\s+.*?-recurse\s+.*?(?:[A-Za-z]:[\\/]|/|~)",
         "risk": "CRITICAL",
@@ -39,11 +46,25 @@ DEFAULT_DESTRUCTIVE_RULES = [
         "message": "Remote code execution download cradle detected."
     },
     {
+        "name": "curl_pipe_execution",
+        "pattern": r"(?i)(?:curl|wget)\s+.*?\|\s*(?:bash|sh|zsh|python|powershell)",
+        "risk": "CRITICAL",
+        "action": "REQUIRE_CONFIRMATION",
+        "message": "Remote code download and pipe execution detected."
+    },
+    {
         "name": "git_force_push",
         "pattern": r"(?i)\bgit\s+push\b.*?\s+(?:--force|-f)\b",
         "risk": "HIGH",
         "action": "REQUIRE_CONFIRMATION",
         "message": "Git force push can overwrite remote branch history."
+    },
+    {
+        "name": "git_force_push_plus",
+        "pattern": r"(?i)\bgit\s+push\b.*?\s+\+\w",
+        "risk": "HIGH",
+        "action": "REQUIRE_CONFIRMATION",
+        "message": "Git refspec force push (+branch) can overwrite remote history."
     },
     {
         "name": "git_hard_reset",
@@ -81,21 +102,32 @@ class CommandInterceptor:
 
     def __init__(self, config_path: str = None):
         self.rules = list(DEFAULT_DESTRUCTIVE_RULES)
-        if config_path and os.path.exists(config_path):
-            try:
-                with open(config_path, "r", encoding="utf-8") as f:
-                    cfg = json.load(f)
-                    custom_cmds = cfg.get("protected_patterns", {}).get("destructive_commands", [])
-                    for i, pat in enumerate(custom_cmds):
-                        self.rules.append({
-                            "name": f"custom_rule_{i}",
-                            "pattern": pat,
-                            "risk": "HIGH",
-                            "action": "REQUIRE_CONFIRMATION",
-                            "message": f"Matches protected destructive command pattern: {pat}"
-                        })
-            except Exception:
-                pass
+        cfg = self._load_config(config_path)
+        custom_cmds = cfg.get("protected_patterns", {}).get("destructive_commands", [])
+        for i, pat in enumerate(custom_cmds):
+            self.rules.append({
+                "name": f"custom_rule_{i}",
+                "pattern": pat,
+                "risk": "HIGH",
+                "action": "REQUIRE_CONFIRMATION",
+                "message": f"Matches protected destructive command pattern: {pat}"
+            })
+
+    def _load_config(self, path: str = None) -> dict:
+        candidates = [
+            path,
+            os.path.join(os.getcwd(), "shield.config.json"),
+            os.path.expanduser("~/.config/agentshield/shield.config.json"),
+            os.path.expanduser("~/.agentshield.json")
+        ]
+        for c in candidates:
+            if c and os.path.exists(c):
+                try:
+                    with open(c, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception:
+                    pass
+        return {}
 
     def evaluate(self, command_line: str) -> Tuple[bool, str, Dict[str, Any]]:
         """

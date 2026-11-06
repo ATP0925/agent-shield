@@ -38,7 +38,14 @@ class ConfirmationGate:
 
         # Step 1: Payload Inspection
         print(f"\n[Step 1/{self.required_steps}] Payload Verification")
-        val1 = input("Have you reviewed the staged changes and confirmed no private keys or secrets exist? (yes/no): ").strip().lower()
+        try:
+            if not sys.stdin or not sys.stdin.isatty():
+                print("❌ Gate Aborted: No interactive terminal available.", file=sys.stderr)
+                return False
+            val1 = input("Have you reviewed the staged changes and confirmed no private keys or secrets exist? (yes/no): ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\n❌ Gate Aborted: No interactive input available.", file=sys.stderr)
+            return False
         if val1 not in ["y", "yes"]:
             print("❌ Gate Aborted: Step 1 confirmation rejected.")
             return False
@@ -46,7 +53,14 @@ class ConfirmationGate:
         if self.required_steps >= 2:
             # Step 2: Final Authorization
             print(f"\n[Step 2/{self.required_steps}] Final Authorization")
-            val2 = input(f"Are you 100% certain you wish to proceed with '{action_name}'? (confirm/cancel): ").strip().lower()
+            try:
+                if not sys.stdin or not sys.stdin.isatty():
+                    print("❌ Gate Aborted: No interactive terminal available.", file=sys.stderr)
+                    return False
+                val2 = input(f"Are you 100% certain you wish to proceed with '{action_name}'? (confirm/cancel): ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                print("\n❌ Gate Aborted: No interactive input available.", file=sys.stderr)
+                return False
             if val2 not in ["confirm", "yes", "y"]:
                 print("❌ Gate Aborted: Step 2 authorization rejected.")
                 return False

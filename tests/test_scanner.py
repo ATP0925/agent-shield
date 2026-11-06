@@ -63,6 +63,39 @@ class TestShieldScanner(unittest.TestCase):
         # For unified diffs, removed lines starting with '-' should not be flagged
         self.assertFalse(any(f["type"] == "aws_access_key" for f in findings))
 
+    def test_fnmatch_agent_artifacts_matching(self):
+        import tempfile
+        import os
+        with tempfile.TemporaryDirectory() as tmpdir:
+            claude_dir = os.path.join(tmpdir, ".claude")
+            os.makedirs(claude_dir, exist_ok=True)
+            claude_hist = os.path.join(claude_dir, "history.json")
+            with open(claude_hist, "w", encoding="utf-8") as f:
+                f.write('{"conversations": []}')
+
+            findings = self.scanner.scan_file(claude_hist)
+            self.assertEqual(len(findings), 1)
+            self.assertEqual(findings[0]["type"], "protected_file")
+            self.assertEqual(findings[0]["sample"], "history.json")
+
+            cursor_dir = os.path.join(tmpdir, ".cursor")
+            os.makedirs(cursor_dir, exist_ok=True)
+            cursor_log = os.path.join(cursor_dir, "logs_test.txt")
+            with open(cursor_log, "w", encoding="utf-8") as f:
+                f.write("agent logs content")
+
+            findings2 = self.scanner.scan_file(cursor_log)
+            self.assertEqual(len(findings2), 1)
+            self.assertEqual(findings2[0]["type"], "protected_file")
+            self.assertEqual(findings2[0]["sample"], "logs_test.txt")
+
+            safe_file = os.path.join(tmpdir, "safe_script.py")
+            with open(safe_file, "w", encoding="utf-8") as f:
+                f.write("print('hello world')\n")
+
+            findings_safe = self.scanner.scan_file(safe_file)
+            self.assertEqual(len(findings_safe), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

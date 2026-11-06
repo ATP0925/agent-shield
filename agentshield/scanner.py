@@ -6,6 +6,7 @@ import os
 import re
 import json
 import math
+import fnmatch
 from typing import List, Dict, Any, Tuple
 
 
@@ -119,20 +120,27 @@ class ShieldScanner:
         if not os.path.exists(file_path):
             return []
 
-        # Check protected filename patterns
-        protected_globs = self.config.get("protected_patterns", {}).get("files", [])
+        # Check protected filename patterns (both files and agent_artifacts)
+        all_protected = []
+        all_protected.extend(self.config.get("protected_patterns", {}).get("files", []))
+        all_protected.extend(self.config.get("protected_patterns", {}).get("agent_artifacts", []))
+
+        # Use relative and normalized path for matching
+        norm_path = file_path.replace("\\", "/")
+        try:
+            rel_path = os.path.relpath(file_path).replace("\\", "/")
+        except Exception:
+            rel_path = norm_path
         base_name = os.path.basename(file_path)
-        for glob_pat in protected_globs:
-            # Simple wildcards check
-            if glob_pat.startswith("*") and base_name.endswith(glob_pat[1:]):
-                return [{
-                    "file": file_path,
-                    "line": 1,
-                    "type": "protected_file",
-                    "sample": base_name,
-                    "raw_length": len(base_name)
-                }]
-            elif glob_pat.endswith("*") and base_name.startswith(glob_pat[:-1]):
+
+        for glob_pat in all_protected:
+            # fnmatch-style matching
+            if (
+                fnmatch.fnmatch(base_name, glob_pat)
+                or fnmatch.fnmatch(rel_path, glob_pat)
+                or fnmatch.fnmatch(norm_path, glob_pat)
+                or fnmatch.fnmatch(norm_path, f"*/{glob_pat.lstrip('/')}")
+            ):
                 return [{
                     "file": file_path,
                     "line": 1,
