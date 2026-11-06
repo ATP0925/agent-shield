@@ -172,7 +172,7 @@ def cmd_doctor(args):
 
 def main():
     parser = argparse.ArgumentParser(prog="agentshield", description="Bulletproof security harness for autonomous AI coding agents.")
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="subcommand")
 
     # init
     p_init = subparsers.add_parser("init", help="Initialize AgentShield in current repo")
@@ -193,7 +193,7 @@ def main():
     p_doc = subparsers.add_parser("doctor", help="Check security posture and git config")
 
     args = parser.parse_args()
-    command = getattr(args, "command", None)
+    command = getattr(args, "subcommand", None)
     if command == "init":
         cmd_init(args)
     elif command == "scan":

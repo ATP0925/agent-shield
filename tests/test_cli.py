@@ -61,6 +61,15 @@ class TestCliCommands(unittest.TestCase):
             cmd_check_cmd(args)
         self.assertEqual(ctx.exception.code, 0)
 
+    def test_main_subcommand_check_cmd_parsed(self):
+        from unittest.mock import patch
+        from agentshield.cli import main
+        test_args = ["agentshield", "check-cmd", "echo", "hello", "--non-interactive"]
+        with patch.object(sys, "argv", test_args):
+            with self.assertRaises(SystemExit) as ctx:
+                main()
+            self.assertEqual(ctx.exception.code, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
