@@ -38,8 +38,15 @@ class GitAnonymizer:
         if not username:
             return False, "Username required to configure noreply address."
         
-        prefix = f"{user_id}+" if user_id else ""
-        noreply_email = f"{prefix}{username}@users.noreply.github.com"
+        # Sanitize username to prevent injection
+        safe_user = re.sub(r'[^a-zA-Z0-9_\-.]', '', username)
+        safe_id = re.sub(r'[^0-9]', '', user_id) if user_id else ""
+        
+        if not safe_user:
+            return False, "Invalid username after sanitization."
+        
+        prefix = f"{safe_id}+" if safe_id else ""
+        noreply_email = f"{prefix}{safe_user}@users.noreply.github.com"
         
         try:
             subprocess.run(["git", "config", "--global", "user.email", noreply_email], check=True)

@@ -19,8 +19,11 @@ class ConfirmationGate:
         Returns True if all confirmation steps are satisfied.
         """
         if self.non_interactive:
-            # In CI or non-interactive mode, block unless 0 findings
-            return findings is None or len(findings) == 0
+            # In CI or non-interactive mode, block if any findings exist
+            if findings and len(findings) > 0:
+                print(f"❌ [CI Gate] BLOCKED: {len(findings)} security findings detected. Cannot auto-approve in non-interactive mode.", file=sys.stderr)
+                return False
+            return True
 
         print("\n" + "=" * 60)
         print(f"🛡️  AgentShield Confirmation Gate: [{action_name.upper()}]")

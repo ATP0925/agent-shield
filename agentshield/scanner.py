@@ -78,9 +78,12 @@ class ShieldScanner:
         findings = []
         lines = text.splitlines()
 
+        # Detect if this is a unified diff format
+        is_diff = text.lstrip().startswith("diff ") or text.lstrip().startswith("--- ")
+
         for line_no, line in enumerate(lines, start=1):
-            # For diffs, only check added lines (+)
-            if text.startswith("diff ") or line.startswith("+") or line.startswith("-"):
+            if is_diff:
+                # For diffs, only check added lines (+)
                 if not line.startswith("+") or line.startswith("+++"):
                     continue
                 check_content = line[1:].strip()

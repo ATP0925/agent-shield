@@ -41,6 +41,28 @@ class TestShieldScanner(unittest.TestCase):
         self.assertTrue(any(f["type"] == "openai_api_key" for f in findings))
         self.assertTrue(any(f["type"] == "stripe_api_key" for f in findings))
 
+    def test_normal_file_with_plus_and_minus_lines(self):
+        normal_text = """# Math notes
++ 5 + 10 = 15
+- item: user@example.com
++ api_key = 'AKIAIOSFODNN7EXAMPLE'
+"""
+        findings = self.scanner.scan_text(normal_text, source_name="notes.txt")
+        # In a normal file, lines starting with + or - must still be scanned as full content
+        self.assertTrue(any(f["type"] == "email" for f in findings))
+        self.assertTrue(any(f["type"] == "aws_access_key" for f in findings))
+
+    def test_diff_format_skips_removed_lines(self):
+        diff_text = """diff --git a/test.py b/test.py
+--- a/test.py
++++ b/test.py
+-removed_key = 'AKIAIOSFODNN7EXAMPLE'
++added_clean_code = True
+"""
+        findings = self.scanner.scan_text(diff_text, source_name="patch.diff")
+        # For unified diffs, removed lines starting with '-' should not be flagged
+        self.assertFalse(any(f["type"] == "aws_access_key" for f in findings))
+
 
 if __name__ == "__main__":
     unittest.main()

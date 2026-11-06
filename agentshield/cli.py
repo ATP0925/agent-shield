@@ -190,13 +190,14 @@ def main():
     p_doc = subparsers.add_parser("doctor", help="Check security posture and git config")
 
     args = parser.parse_args()
-    if args.command == "init":
+    command = getattr(args, "command", None)
+    if command == "init":
         cmd_init(args)
-    elif args.command == "scan":
+    elif command == "scan":
         cmd_scan(args)
-    elif args.command == "check-cmd":
+    elif command == "check-cmd":
         cmd_check_cmd(args)
-    elif args.command == "doctor":
+    elif command == "doctor":
         cmd_doctor(args)
     else:
         parser.print_help()

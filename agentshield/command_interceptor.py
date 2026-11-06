@@ -65,6 +65,13 @@ DEFAULT_DESTRUCTIVE_RULES = [
         "risk": "CRITICAL",
         "action": "BLOCK",
         "message": "Direct git staging of environment/secret files (.env*) is blocked."
+    },
+    {
+        "name": "staging_all_files",
+        "pattern": r"(?i)\bgit\s+add\s+(?:-[aA]|\.)\s*$",
+        "risk": "HIGH",
+        "action": "REQUIRE_CONFIRMATION",
+        "message": "Blanket staging (git add . / git add -A) may include secret files. Use explicit file paths."
     }
 ]
 
