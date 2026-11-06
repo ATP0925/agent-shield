@@ -12,6 +12,16 @@ class TestCommandInterceptor(unittest.TestCase):
         self.assertFalse(allowed)
         self.assertEqual(action, "BLOCK")
 
+        # Windows PowerShell recursive deletion test
+        allowed_win, action_win, _ = self.interceptor.evaluate("Remove-Item -Recurse -Force C:\\")
+        self.assertFalse(allowed_win)
+        self.assertEqual(action_win, "BLOCK")
+
+        # Disk formatting test
+        allowed_fmt, action_fmt, _ = self.interceptor.evaluate("format C:")
+        self.assertFalse(allowed_fmt)
+        self.assertEqual(action_fmt, "BLOCK")
+
     def test_flags_git_force_push(self):
         allowed, action, rule = self.interceptor.evaluate("git push origin main --force")
         self.assertTrue(allowed)
@@ -34,3 +44,4 @@ class TestCommandInterceptor(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

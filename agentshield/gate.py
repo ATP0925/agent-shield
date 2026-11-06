@@ -50,3 +50,4 @@ class ConfirmationGate:
 
         print("✅ Gate Passed: Operation authorized.\n")
         return True
+

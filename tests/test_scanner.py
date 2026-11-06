@@ -33,6 +33,15 @@ class TestShieldScanner(unittest.TestCase):
         findings = self.scanner.scan_text(diff)
         self.assertTrue(any(f["type"] == "private_key" for f in findings))
 
+    def test_detects_openai_and_stripe_keys(self):
+        fake_openai = "sk-proj-" + "sampleSecretKeyForTestingPurposeOnly1234567890ABCDEF"
+        fake_stripe = "sk_live_" + "testMockSecretForUnitTestValidation123"
+        diff = f"+openai = '{fake_openai}'\n+stripe = '{fake_stripe}'"
+        findings = self.scanner.scan_text(diff)
+        self.assertTrue(any(f["type"] == "openai_api_key" for f in findings))
+        self.assertTrue(any(f["type"] == "stripe_api_key" for f in findings))
+
 
 if __name__ == "__main__":
     unittest.main()
+

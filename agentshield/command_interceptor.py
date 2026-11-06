@@ -18,6 +18,27 @@ DEFAULT_DESTRUCTIVE_RULES = [
         "message": "Dangerous recursive deletion of root/home filesystem prohibited."
     },
     {
+        "name": "powershell_recursive_root_deletion",
+        "pattern": r"(?i)(?:remove-item|del|rmdir|rd)\s+.*?-recurse\s+.*?(?:[A-Za-z]:[\\/]|/|~)",
+        "risk": "CRITICAL",
+        "action": "BLOCK",
+        "message": "PowerShell recursive root/home deletion prohibited."
+    },
+    {
+        "name": "disk_formatting",
+        "pattern": r"(?i)\b(?:format\s+[A-Za-z]:|diskpart)(?:\s|$)",
+        "risk": "CRITICAL",
+        "action": "BLOCK",
+        "message": "Disk formatting and partition destruction blocked."
+    },
+    {
+        "name": "powershell_download_cradle",
+        "pattern": r"(?i)(?:iex|invoke-expression)\s*\(.*?(?:downloadstring|webclient|iwr).*?\)",
+        "risk": "CRITICAL",
+        "action": "REQUIRE_CONFIRMATION",
+        "message": "Remote code execution download cradle detected."
+    },
+    {
         "name": "git_force_push",
         "pattern": r"(?i)\bgit\s+push\b.*?\s+(?:--force|-f)\b",
         "risk": "HIGH",

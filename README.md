@@ -123,3 +123,4 @@ python -m unittest discover -s tests
 
 Contributions, rules, and ecosystem adapters are welcome!
 Licensed under the [MIT License](LICENSE).
+

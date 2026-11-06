@@ -46,3 +46,4 @@ class GitAnonymizer:
             return True, f"Global git email configured to: {noreply_email}"
         except Exception as e:
             return False, str(e)
+
