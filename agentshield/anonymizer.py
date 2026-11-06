@@ -33,8 +33,8 @@ class GitAnonymizer:
         return bool(re.search(r"@users\.noreply\.github\.com$", email, re.I))
 
     @staticmethod
-    def enforce_noreply(username: str, user_id: str = "") -> Tuple[bool, str]:
-        """Sets the global git user.email to GitHub private noreply address."""
+    def enforce_noreply(username: str, user_id: str = "", scope: str = "local") -> Tuple[bool, str]:
+        """Sets the git user.email to GitHub private noreply address."""
         if not username:
             return False, "Username required to configure noreply address."
         
@@ -48,9 +48,10 @@ class GitAnonymizer:
         prefix = f"{safe_id}+" if safe_id else ""
         noreply_email = f"{prefix}{safe_user}@users.noreply.github.com"
         
+        git_scope = f"--{scope}" if scope in ("local", "global", "system") else "--local"
         try:
-            subprocess.run(["git", "config", "--global", "user.email", noreply_email], check=True)
-            return True, f"Global git email configured to: {noreply_email}"
+            subprocess.run(["git", "config", git_scope, "user.email", noreply_email], check=True)
+            return True, f"Git email ({scope}) configured to: {noreply_email}"
         except Exception as e:
             return False, str(e)
 

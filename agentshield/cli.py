@@ -54,11 +54,13 @@ def cmd_init(args):
 
         pre_commit_script = """#!/usr/bin/env sh
 # AgentShield Pre-Commit Security Hook
-python -m agentshield.cli scan --cached || exit 1
+command -v python3 >/dev/null 2>&1 && PYTHON=python3 || PYTHON=python
+$PYTHON -m agentshield.cli scan --cached || exit 1
 """
         pre_push_script = """#!/usr/bin/env sh
 # AgentShield Pre-Push Security Hook
-python -m agentshield.cli scan --diff HEAD~1 || exit 1
+command -v python3 >/dev/null 2>&1 && PYTHON=python3 || PYTHON=python
+$PYTHON -m agentshield.cli scan --diff HEAD~1 || exit 1
 """
         pc_path = os.path.join(hooks_dir, "pre-commit")
         pp_path = os.path.join(hooks_dir, "pre-push")
@@ -129,8 +131,9 @@ def cmd_scan(args):
 
 def cmd_check_cmd(args):
     """Evaluates an autonomous shell command."""
+    command_str = " ".join(args.command) if isinstance(args.command, list) else args.command
     interceptor = CommandInterceptor()
-    allowed, action, rule = interceptor.evaluate(args.command)
+    allowed, action, rule = interceptor.evaluate(command_str)
     if not allowed:
         print(f"🚫 [BLOCKED] AgentShield intercepted high-risk command:")
         print(f"   Rule: {rule.get('name')} | Risk: {rule.get('risk')}")
@@ -141,7 +144,7 @@ def cmd_check_cmd(args):
         print(f"   Rule: {rule.get('name')} | Risk: {rule.get('risk')}")
         print(f"   Reason: {rule.get('message')}")
         gate = ConfirmationGate(steps=1, non_interactive=args.non_interactive)
-        if not gate.verify_action(f"Execute flagged command: {args.command}"):
+        if not gate.verify_action(f"Execute flagged command: {command_str}"):
             sys.exit(1)
         sys.exit(0)
     else:
@@ -183,7 +186,7 @@ def main():
 
     # check-cmd
     p_cmd = subparsers.add_parser("check-cmd", help="Evaluate safety of a terminal command")
-    p_cmd.add_argument("command", type=str, help="Command line string to evaluate")
+    p_cmd.add_argument("command", type=str, nargs="+", help="Command line string to evaluate")
     p_cmd.add_argument("--non-interactive", action="store_true", help="Non-interactive evaluation")
 
     # doctor

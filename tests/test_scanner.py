@@ -44,7 +44,7 @@ class TestShieldScanner(unittest.TestCase):
     def test_normal_file_with_plus_and_minus_lines(self):
         normal_text = """# Math notes
 + 5 + 10 = 15
-- item: user@example.com
+- item: user@company.com
 + api_key = 'AKIAIOSFODNN7EXAMPLE'
 """
         findings = self.scanner.scan_text(normal_text, source_name="notes.txt")
@@ -95,6 +95,70 @@ class TestShieldScanner(unittest.TestCase):
 
             findings_safe = self.scanner.scan_file(safe_file)
             self.assertEqual(len(findings_safe), 0)
+
+    def test_exempts_rfc2606_example_emails(self):
+        for email in [
+            "support@example.com",
+            "info@example.org",
+            "test@example.net",
+            "user@test.com",
+            "admin@localhost"
+        ]:
+            diff = f"+contact = '{email}'"
+            findings = self.scanner.scan_text(diff)
+            self.assertFalse(any(f["type"] == "email" for f in findings), f"Expected {email} to be exempt")
+
+    def test_generic_secret_entropy_filtering(self):
+        # Low entropy secrets (false positives) should be skipped
+        low_entropy_diff = '+password = "test1234"\n+api_key: test1234\n+secret_key = "password"'
+        findings_low = self.scanner.scan_text(low_entropy_diff)
+        self.assertFalse(any(f["type"] == "generic_secret" for f in findings_low))
+
+        # High entropy secret (quoted and unquoted) constructed programmatically
+        rand_token = "".join(["k", "X", "9", "_", "m", "Z", "#", "7", "p", "Q", "!", "2", "L", "4"])
+        high_entropy_diff = f"+password = '{rand_token}'\n+api_key = {rand_token}"
+        findings_high = self.scanner.scan_text(high_entropy_diff)
+        self.assertTrue(any(f["type"] == "generic_secret" for f in findings_high))
+
+    def test_binary_file_skipped(self):
+        import tempfile
+        import os
+        with tempfile.NamedTemporaryFile(delete=False) as tf:
+            tf.write(b"header\x00data\x01\x02password='secret'")
+            temp_path = tf.name
+        try:
+            findings = self.scanner.scan_file(temp_path)
+            self.assertEqual(findings, [])
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+
+    def test_oversized_file_reported(self):
+        from unittest.mock import patch
+        with patch("os.path.exists", return_value=True), \
+             patch("os.path.getsize", return_value=12 * 1024 * 1024):
+            findings = self.scanner.scan_file("huge_data.csv")
+            self.assertEqual(len(findings), 1)
+            self.assertEqual(findings[0]["type"], "oversized_file")
+
+    def test_config_discovery_repo_root(self):
+        import tempfile
+        import os
+        from unittest.mock import patch
+        old_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp_root:
+            sub_dir = os.path.join(tmp_root, "nested_folder")
+            os.makedirs(sub_dir)
+            cfg_file = os.path.join(tmp_root, "shield.config.json")
+            with open(cfg_file, "w", encoding="utf-8") as f:
+                f.write('{"test_key": "repo_root_val"}')
+            os.chdir(sub_dir)
+            try:
+                with patch("subprocess.check_output", return_value=tmp_root):
+                    scanner = ShieldScanner()
+                    self.assertEqual(scanner.config.get("test_key"), "repo_root_val")
+            finally:
+                os.chdir(old_cwd)
 
 
 if __name__ == "__main__":
