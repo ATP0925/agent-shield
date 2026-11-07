@@ -105,6 +105,9 @@ def cmd_scan(args):
             sys.exit(1)
     else:
         scan_target = args.path or "."
+        if not os.path.exists(scan_target):
+            print(f"❌ [AgentShield Error] Target path '{scan_target}' does not exist.", file=sys.stderr)
+            sys.exit(1)
         if os.path.isdir(scan_target):
             for root, dirs, files in os.walk(scan_target):
                 # Prune git internal, cache, venv, and tests artifacts

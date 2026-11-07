@@ -79,6 +79,15 @@ class TestCliCommands(unittest.TestCase):
                 main()
             self.assertEqual(ctx.exception.code, 0)
 
+    def test_scan_non_existent_path_fails(self):
+        from unittest.mock import patch
+        from agentshield.cli import main
+        test_args = ["agentshield", "scan", "--path", "definitely_non_existent_file_xyz.py", "--non-interactive"]
+        with patch.object(sys, "argv", test_args):
+            with self.assertRaises(SystemExit) as ctx:
+                main()
+            self.assertEqual(ctx.exception.code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
