@@ -103,14 +103,17 @@ def cmd_scan(args):
         except Exception as e:
             print(f"Git diff error: {e}", file=sys.stderr)
             sys.exit(1)
-    elif args.path:
-        if os.path.isdir(args.path):
-            for root, _, files in os.walk(args.path):
+    else:
+        scan_target = args.path or "."
+        if os.path.isdir(scan_target):
+            for root, dirs, files in os.walk(scan_target):
+                # Prune git internal, cache, venv, and tests artifacts
+                dirs[:] = [d for d in dirs if d not in (".git", "__pycache__", ".pytest_cache", ".venv", "venv", "node_modules")]
                 for f in files:
                     fp = os.path.join(root, f)
                     findings.extend(scanner.scan_file(fp))
         else:
-            findings = scanner.scan_file(args.path)
+            findings = scanner.scan_file(scan_target)
 
     if findings:
         print(f"\n🚨 [AgentShield] Security violation detected! Found {len(findings)} issues:")
